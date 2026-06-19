@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models import (
@@ -45,6 +45,7 @@ def get_training(db: Session, training_id: int) -> Training:
 def list_trainings(
     db: Session,
     *,
+    current_user: User | None = None,
     status_filter: TrainingStatus | None = None,
     department_id: int | None = None,
     search: str | None = None,
@@ -58,6 +59,21 @@ def list_trainings(
         conditions.append(Training.department_id == department_id)
     if search:
         conditions.append(Training.title.ilike(f"%{search}%"))
+
+    # Role scoping: admin sees all; trainer sees own; employee sees enrolled.
+    if current_user is not None and current_user.role != UserRole.super_admin:
+        if current_user.role == UserRole.trainer:
+            conditions.append(
+                or_(
+                    Training.trainer_id == current_user.id,
+                    Training.created_by == current_user.id,
+                )
+            )
+        else:  # employee
+            enrolled = select(Enrollment.training_id).where(
+                Enrollment.user_id == current_user.id
+            )
+            conditions.append(Training.id.in_(enrolled))
 
     base = select(Training)
     if conditions:

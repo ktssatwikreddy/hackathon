@@ -87,23 +87,37 @@ class MockGroqService:
         num_questions: int = 5,
         types: list[str] | None = None,
         topic: str = "the training material",
+        material: str = "",
         **_: Any,
     ) -> dict:
         types = [str(t) for t in (types or ["mcq", "short"])]
+        # Pull a few salient keywords from the material so the mock at least
+        # references real terms instead of "concept 1".
+        import re
+
+        stop = {"the", "and", "with", "from", "this", "that", "have", "into", "your", "will", "for", "are", "you"}
+        words = [w for w in re.findall(r"[A-Za-z][A-Za-z\-]{3,}", material) if w.lower() not in stop]
+        seen: list[str] = []
+        for w in words:
+            if w.lower() not in [s.lower() for s in seen]:
+                seen.append(w)
+        keywords = seen or [topic]
+
         questions = []
         for i in range(num_questions):
+            kw = keywords[i % len(keywords)]
             qtype = types[i % len(types)]
             if qtype == "mcq":
-                correct = f"Correct option for concept {i + 1}"
+                correct = f"{kw} is a core idea covered in {topic}"
                 questions.append(
                     {
-                        "question_text": f"Q{i + 1}: Which statement about {topic} (concept {i + 1}) is correct?",
+                        "question_text": f"Which of the following best describes \"{kw}\" as presented in {topic}?",
                         "question_type": "mcq",
                         "options": [
                             correct,
-                            f"Common misconception {i + 1}",
-                            f"Unrelated idea {i + 1}",
-                            f"Partially true claim {i + 1}",
+                            f"{kw} is unrelated to {topic}",
+                            f"{kw} only applies outside {topic}",
+                            f"{kw} is explicitly discouraged in {topic}",
                         ],
                         "correct_answer": correct,
                         "marks": 1,
@@ -112,10 +126,10 @@ class MockGroqService:
             elif qtype == "short":
                 questions.append(
                     {
-                        "question_text": f"Q{i + 1}: In one phrase, define key term {i + 1} from {topic}.",
+                        "question_text": f"In one phrase, explain the term \"{kw}\" as used in {topic}.",
                         "question_type": "short",
                         "options": None,
-                        "correct_answer": f"key term {i + 1}",
+                        "correct_answer": kw,
                         "marks": 1,
                     }
                 )

@@ -29,10 +29,10 @@ def list_trainings(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     items, total = training_service.list_trainings(
-        db, status_filter=status_filter, department_id=department_id, search=search, page=page, size=size
+        db, current_user=current_user, status_filter=status_filter, department_id=department_id, search=search, page=page, size=size
     )
     return Paginated.build([TrainingOut.model_validate(t) for t in items], total, page, size)
 
