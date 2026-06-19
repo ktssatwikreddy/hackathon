@@ -48,3 +48,15 @@ for the Phase 9 container start.
 **Why:** Lets a developer run `uvicorn` immediately after clone without first
 running `alembic upgrade`. `create_all` is a no-op when tables already exist, so
 it never conflicts with a migrated database.
+
+## D6 — Frontend pinned to the spec's locked stack
+**Decision:** The pre-existing frontend used React 19 / MUI 7 / React Router 7
+and was missing the spec's required libraries. Rebuilt to the spec's locked
+stack: React 18, MUI 5, React Router 6, plus TanStack Query 5 (server state),
+react-hook-form + zod (forms/validation), and zustand (auth state). State is in
+zustand per §1's "pick one" — chosen over Context for its tiny API and built-in
+`persist` (keeps the session across reloads).
+**Why:** §1 marks the stack "locked — do not substitute." React 18 + MUI 5 +
+RR6 + RQ5 is also the most battle-tested combination, minimising build/runtime
+surprises. Auth tokens persist via zustand `persist`; axios interceptors handle
+bearer injection and a single silent refresh on 401.

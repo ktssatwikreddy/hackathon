@@ -1,0 +1,38 @@
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+.loginShell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #eef5f8, #f7faf6);
+  padding: 24px;
+}
+
+.loginPanel {
+  width: min(440px, 100%);
+  padding: 32px;
+}
+
+.metricCard,
+.chartCard,
+.tablePanel,
+.formPanel,
+.notificationRow {
+  padding: 20px;
+}
+
+.jsonBlock {
+  background: #101820;
+  color: #eef6f9;
+  padding: 16px;
+  border-radius: 8px;
+  overflow: auto;
+}
