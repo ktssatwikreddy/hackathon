@@ -1,10 +1,13 @@
 from fastapi import HTTPException, status
+from jose import JWTError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.security import decode_token
 from app.models import (
     Attendance,
     AttendanceStatus,
+    AttendanceToken,
     Enrollment,
     Training,
     TrainingSession,
@@ -74,6 +77,63 @@ def bulk_mark(
         db.add(record)
         created.append(record)
     return created
+
+
+def checkin_by_token(db: Session, token: str, current_user: User) -> dict:
+    """Self check-in via a scanned QR token. Idempotent on re-scan."""
+    # 1. Validate the signed token (type + expiry).
+    try:
+        claims = decode_token(token, expected_type="attendance")
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Invalid or expired QR code")
+
+    # 2. The jti must still be active (not rotated/revoked).
+    jti = claims.get("jti")
+    row = db.scalar(select(AttendanceToken).where(AttendanceToken.jti == jti))
+    if not row or not row.is_active:
+        raise HTTPException(status_code=410, detail="This QR code is no longer valid")
+
+    # 3. Resolve the session.
+    session_id = int(claims["sub"])
+    session = db.get(TrainingSession, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    training = db.get(Training, session.training_id)
+
+    # 4. Caller must be enrolled in the training.
+    enrolled = db.scalar(
+        select(Enrollment).where(
+            Enrollment.training_id == session.training_id,
+            Enrollment.user_id == current_user.id,
+        )
+    )
+    if not enrolled:
+        raise HTTPException(status_code=403, detail="You are not enrolled in this training")
+
+    # 5. Idempotent upsert.
+    existing = db.scalar(
+        select(Attendance).where(
+            Attendance.session_id == session_id, Attendance.user_id == current_user.id
+        )
+    )
+    already = existing is not None
+    if not already:
+        db.add(
+            Attendance(
+                session_id=session_id,
+                user_id=current_user.id,
+                status=AttendanceStatus.present,
+                marked_by=current_user.id,
+                notes="self check-in via QR",
+            )
+        )
+
+    return {
+        "status": "present",
+        "session_id": session_id,
+        "training_title": training.title if training else "",
+        "already_marked": already,
+    }
 
 
 def list_mine(db: Session, user_id: int) -> list[dict]:

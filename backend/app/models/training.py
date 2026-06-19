@@ -137,6 +137,7 @@ class AttendanceToken(Base):
         ForeignKey("training_sessions.id"), index=True
     )
     jti: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    token: Mapped[str] = mapped_column(Text)
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     is_active: Mapped[bool] = mapped_column(default=True)

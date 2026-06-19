@@ -8,7 +8,7 @@ from app.core.config import get_settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-TokenType = Literal["access", "refresh"]
+TokenType = Literal["access", "refresh", "attendance"]
 
 
 def hash_password(password: str) -> str:
@@ -49,6 +49,13 @@ def create_refresh_token(subject: str) -> str:
     settings = get_settings()
     return _create_token(
         subject, "refresh", timedelta(days=settings.refresh_token_expire_days)
+    )
+
+
+def create_attendance_token(session_id: int, jti: str, ttl_minutes: int) -> str:
+    """Signed QR token bound to a session. `sub` is the session id."""
+    return _create_token(
+        str(session_id), "attendance", timedelta(minutes=ttl_minutes), {"jti": jti}
     )
 
 

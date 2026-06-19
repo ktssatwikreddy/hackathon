@@ -10,6 +10,7 @@ from app.schemas.attendance import (
     BulkAttendanceRequest,
     MyAttendanceOut,
 )
+from app.schemas.qr import CheckinRequest, CheckinResponse
 from app.services import attendance_service
 
 router = APIRouter(prefix="/api/attendance", tags=["attendance"])
@@ -56,3 +57,16 @@ def my_attendance(
     db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     return attendance_service.list_mine(db, current_user.id)
+
+
+@router.post("/checkin", response_model=CheckinResponse, summary="Self check-in by scanning a session QR")
+def checkin(
+    payload: CheckinRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = attendance_service.checkin_by_token(db, payload.token, current_user)
+    audit_log(db, action="qr_checkin", entity="session", entity_id=result["session_id"], user_id=current_user.id, request=request)
+    db.commit()
+    return result
