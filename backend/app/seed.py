@@ -32,7 +32,7 @@ from app.models import (
     UserRole,
 )
 
-ADMIN_EMAIL = "admin@tapms.local"
+ADMIN_EMAIL = "admin@tapms.com"
 ADMIN_PASSWORD = "Admin@123"
 TRAINER_PASSWORD = "Trainer@123"
 EMPLOYEE_PASSWORD = "Employee@123"
@@ -79,7 +79,7 @@ def seed() -> None:
             User(
                 employee_code="EMP0002",
                 name="Tom Trainer",
-                email="trainer1@tapms.local",
+                email="trainer1@tapms.com",
                 password_hash=hash_password(TRAINER_PASSWORD),
                 role=UserRole.trainer,
                 department_id=eng.id,
@@ -89,7 +89,7 @@ def seed() -> None:
             User(
                 employee_code="EMP0003",
                 name="Tina Teacher",
-                email="trainer2@tapms.local",
+                email="trainer2@tapms.com",
                 password_hash=hash_password(TRAINER_PASSWORD),
                 role=UserRole.trainer,
                 department_id=sales.id,
@@ -108,7 +108,7 @@ def seed() -> None:
                 User(
                     employee_code=f"EMP{i + 3:04d}",
                     name=f"Employee {i:02d}",
-                    email=f"employee{i}@tapms.local",
+                    email=f"employee{i}@tapms.com",
                     password_hash=hash_password(EMPLOYEE_PASSWORD),
                     role=UserRole.employee,
                     department_id=dept.id,
@@ -311,9 +311,9 @@ def _print_credentials() -> None:
     print("  TAPMS seeded login credentials")
     print("=" * 56)
     print(f"  Super Admin : {ADMIN_EMAIL} / {ADMIN_PASSWORD}")
-    print(f"  Trainer 1   : trainer1@tapms.local / {TRAINER_PASSWORD}")
-    print(f"  Trainer 2   : trainer2@tapms.local / {TRAINER_PASSWORD}")
-    print(f"  Employees   : employee1..10@tapms.local / {EMPLOYEE_PASSWORD}")
+    print(f"  Trainer 1   : trainer1@tapms.com / {TRAINER_PASSWORD}")
+    print(f"  Trainer 2   : trainer2@tapms.com / {TRAINER_PASSWORD}")
+    print(f"  Employees   : employee1..10@tapms.com / {EMPLOYEE_PASSWORD}")
     print("=" * 56)
 
 
