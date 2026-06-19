@@ -215,6 +215,51 @@ def list_results(db: Session, assessment_id: int, current_user: User) -> list[As
     )
 
 
+def question_analytics(db: Session, assessment_id: int, current_user: User) -> list[dict]:
+    """Per-question stats for staff: the answer key + how many attempts got it right."""
+    assessment = get_assessment(db, assessment_id)
+    assert_training_access(current_user, get_training(db, assessment.training_id))
+
+    questions = list_questions(db, assessment_id)
+    results = list(
+        db.scalars(select(AssessmentResult).where(AssessmentResult.assessment_id == assessment_id))
+    )
+
+    out = []
+    for q in questions:
+        key = str(q.id)
+        attempts = 0
+        correct = 0
+        for r in results:
+            answers = r.answers or {}
+            if key not in answers:
+                continue
+            attempts += 1
+            submitted = answers.get(key)
+            if (
+                q.question_type in AUTO_GRADABLE
+                and q.correct_answer is not None
+                and submitted is not None
+                and _normalize(str(submitted)) == _normalize(q.correct_answer)
+            ):
+                correct += 1
+        out.append(
+            {
+                "id": q.id,
+                "question_text": q.question_text,
+                "question_type": q.question_type,
+                "options": q.options,
+                "correct_answer": q.correct_answer,
+                "marks": q.marks,
+                "order_index": q.order_index,
+                "attempts": attempts,
+                "correct": correct,
+                "accuracy": round(correct / attempts * 100, 1) if attempts else 0.0,
+            }
+        )
+    return out
+
+
 def list_my_results(db: Session, user_id: int) -> list[AssessmentResult]:
     return list(
         db.scalars(

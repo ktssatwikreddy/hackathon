@@ -70,6 +70,12 @@ class AssessmentOut(ORMModel):
     question_count: int = 0
 
 
+class QuestionAnalytics(QuestionOut):
+    attempts: int
+    correct: int
+    accuracy: float
+
+
 class SubmitRequest(BaseModel):
     # Map of question_id (as string) -> submitted answer.
     answers: dict[str, str]

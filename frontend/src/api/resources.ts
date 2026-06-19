@@ -201,6 +201,8 @@ export const assessmentsApi = {
       .then((r) => r.data),
   results: (id: number) =>
     api.get<AssessmentResult[]>(`/assessments/${id}/results`).then((r) => r.data),
+  analytics: (id: number) =>
+    api.get(`/assessments/${id}/analytics`).then((r) => r.data),
   myResults: () =>
     api.get<AssessmentResult[]>("/assessments/me/results").then((r) => r.data),
 };

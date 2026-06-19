@@ -10,6 +10,7 @@ from app.schemas.assessment import (
     AssessmentCreate,
     AssessmentOut,
     AssessmentUpdate,
+    QuestionAnalytics,
     QuestionCreate,
     QuestionPublic,
     ResultOut,
@@ -130,6 +131,15 @@ def submit_assessment(
     db.commit()
     db.refresh(result)
     return result
+
+
+@router.get("/{assessment_id}/analytics", response_model=list[QuestionAnalytics], summary="Per-question accuracy + answer key (staff)")
+def question_analytics(
+    assessment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(staff_only),
+):
+    return assessment_service.question_analytics(db, assessment_id, current_user)
 
 
 @router.get("/{assessment_id}/results", response_model=list[ResultOut], summary="All results for an assessment (staff)")

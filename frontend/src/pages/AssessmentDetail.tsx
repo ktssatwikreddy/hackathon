@@ -48,6 +48,11 @@ export default function AssessmentDetail() {
     queryFn: () => assessmentsApi.results(assessmentId),
     enabled: isStaff,
   });
+  const { data: analytics } = useQuery({
+    queryKey: ["assessment", assessmentId, "analytics"],
+    queryFn: () => assessmentsApi.analytics(assessmentId),
+    enabled: isStaff,
+  });
 
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<AssessmentResult | null>(null);
@@ -109,7 +114,52 @@ export default function AssessmentDetail() {
             </Table>
           </TableContainer>
         </Paper>
-      ) : (
+      ) : null}
+
+      {isStaff && (
+        <>
+          <Typography variant="h6" sx={{ mt: 3, mb: 1 }}>Questions & accuracy</Typography>
+          <Stack spacing={1.5}>
+            {analytics?.map((q: any, i: number) => (
+              <Card key={q.id} variant="outlined">
+                <CardContent>
+                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
+                    <Box>
+                      <Typography fontWeight={600}>{i + 1}. {q.question_text}</Typography>
+                      {q.options && (
+                        <Stack spacing={0.5} mt={1}>
+                          {q.options.map((opt: string) => (
+                            <Typography key={opt} variant="body2"
+                              color={opt === q.correct_answer ? "success.main" : "text.secondary"}>
+                              {opt === q.correct_answer ? "✓ " : "• "}{opt}
+                            </Typography>
+                          ))}
+                        </Stack>
+                      )}
+                      {!q.options && (
+                        <Typography variant="body2" color="success.main" mt={0.5}>
+                          Answer: {q.correct_answer}
+                        </Typography>
+                      )}
+                    </Box>
+                    <Box sx={{ textAlign: "right", minWidth: 110 }}>
+                      <Typography variant="h5" color={q.accuracy >= 50 ? "success.main" : "error.main"}>
+                        {q.accuracy}%
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {q.correct}/{q.attempts} correct
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </Card>
+            ))}
+            {analytics?.length === 0 && <Typography color="text.secondary">No questions.</Typography>}
+          </Stack>
+        </>
+      )}
+
+      {!isStaff && (
         <Stack spacing={2}>
           {questions?.map((q, i) => (
             <Card key={q.id} variant="outlined">
