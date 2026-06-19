@@ -62,6 +62,7 @@ export interface TrainingSession {
   location: string | null;
   mode: SessionMode;
   meeting_link: string | null;
+  status: "scheduled" | "ended" | "cancelled";
   created_at: string;
 }
 

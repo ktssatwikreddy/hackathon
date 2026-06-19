@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 
 import { authApi } from "../api/resources";
@@ -33,6 +33,8 @@ const DEMO = [
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const next = searchParams.get("next") || "/";
   const setSession = useAuth((s) => s.setSession);
   const [error, setError] = useState<string | null>(null);
   const {
@@ -50,7 +52,7 @@ export default function Login() {
     try {
       const resp = await authApi.login(data.email, data.password);
       setSession(resp.access_token, resp.refresh_token, resp.user);
-      navigate("/");
+      navigate(next);
     } catch {
       setError("Invalid email or password.");
     }

@@ -1,4 +1,4 @@
-import { Add, AutoAwesome, Delete } from "@mui/icons-material";
+import { Add, AutoAwesome, Delete, QrCode2 } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -25,7 +25,8 @@ import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 
 import RoleGuard from "../components/RoleGuard";
-import { aiApi } from "../api/resources";
+import SessionQrDialog from "../components/SessionQrDialog";
+import { type QrToken, aiApi, qrApi, sessionsApi } from "../api/resources";
 import {
   useAssessments,
   useEnrollments,
@@ -171,10 +172,15 @@ interface SForm {
 }
 
 function SessionsTab({ trainingId }: { trainingId: number }) {
+  const qc = useQueryClient();
   const { data: sessions } = useSessions(trainingId);
   const { create } = useSessionMutations();
   const [open, setOpen] = useState(false);
   const { register, handleSubmit, reset } = useForm<SForm>();
+
+  // QR state
+  const [qrToken, setQrToken] = useState<QrToken | null>(null);
+  const [qrSession, setQrSession] = useState<{ id: number; title: string } | null>(null);
 
   const onSubmit = (form: SForm) => {
     create.mutate({
@@ -190,6 +196,23 @@ function SessionsTab({ trainingId }: { trainingId: number }) {
     setOpen(false);
   };
 
+  const endAndGenerate = async (s: { id: number; title: string }) => {
+    await sessionsApi.end(s.id);
+    const token = await qrApi.generate(s.id);
+    qc.invalidateQueries({ queryKey: ["sessions"] });
+    setQrSession(s);
+    setQrToken(token);
+  };
+
+  const regenerate = async () => {
+    if (qrSession) setQrToken(await qrApi.generate(qrSession.id));
+  };
+  const revoke = async () => {
+    if (qrSession) await qrApi.revoke(qrSession.id);
+    setQrToken(null);
+    setQrSession(null);
+  };
+
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <RoleGuard roles={["super_admin", "trainer"]}>
@@ -201,11 +224,36 @@ function SessionsTab({ trainingId }: { trainingId: number }) {
       <List dense>
         {sessions?.length === 0 && <Typography color="text.secondary">No sessions yet.</Typography>}
         {sessions?.map((s) => (
-          <ListItem key={s.id}>
-            <ListItemText primary={`${s.title} — ${s.session_date}`} secondary={`${s.mode} · ${s.location ?? "—"}`} />
+          <ListItem
+            key={s.id}
+            secondaryAction={
+              <RoleGuard roles={["super_admin", "trainer"]}>
+                <Button size="small" variant="outlined" startIcon={<QrCode2 />} onClick={() => endAndGenerate({ id: s.id, title: s.title })}>
+                  {s.status === "ended" ? "Show QR" : "End & QR"}
+                </Button>
+              </RoleGuard>
+            }
+          >
+            <ListItemText
+              primary={
+                <span>
+                  {s.title} — {s.session_date}{" "}
+                  <Chip size="small" label={s.status} color={s.status === "ended" ? "default" : "success"} sx={{ ml: 1 }} />
+                </span>
+              }
+              secondary={`${s.mode} · ${s.location ?? "—"}`}
+            />
           </ListItem>
         ))}
       </List>
+
+      <SessionQrDialog
+        token={qrToken}
+        sessionTitle={qrSession?.title ?? ""}
+        onRegenerate={regenerate}
+        onRevoke={revoke}
+        onClose={() => { setQrToken(null); setQrSession(null); }}
+      />
 
       <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>Add session</DialogTitle>

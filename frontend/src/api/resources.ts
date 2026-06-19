@@ -89,6 +89,30 @@ export const sessionsApi = {
   update: (id: number, body: Record<string, unknown>) =>
     api.patch<TrainingSession>(`/sessions/${id}`, body).then((r) => r.data),
   remove: (id: number) => api.delete(`/sessions/${id}`).then((r) => r.data),
+  end: (id: number) => api.post<TrainingSession>(`/sessions/${id}/end`).then((r) => r.data),
+};
+
+// --- QR attendance ---
+export interface QrToken {
+  token: string;
+  checkin_url: string;
+  qr_png_base64: string;
+  expires_at: string;
+  session_id: number;
+}
+export const qrApi = {
+  generate: (sessionId: number) =>
+    api.post<QrToken>(`/sessions/${sessionId}/qr`).then((r) => r.data),
+  get: (sessionId: number) =>
+    api.get<QrToken>(`/sessions/${sessionId}/qr`).then((r) => r.data),
+  revoke: (sessionId: number) =>
+    api.delete(`/sessions/${sessionId}/qr`).then((r) => r.data),
+};
+
+// --- Courses ---
+export const coursesApi = {
+  create: (body: Record<string, unknown>) =>
+    api.post("/courses", body).then((r) => r.data),
 };
 
 // --- Attendance ---
@@ -103,6 +127,8 @@ export const attendanceApi = {
   bulk: (sessionId: number, entries: AttendanceEntry[]) =>
     api.post("/attendance/bulk", { session_id: sessionId, entries }).then((r) => r.data),
   mine: () => api.get<MyAttendance[]>("/attendance/me").then((r) => r.data),
+  checkin: (token: string) =>
+    api.post("/attendance/checkin", { token }).then((r) => r.data),
 };
 
 // --- Assessments ---
