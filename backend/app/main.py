@@ -13,6 +13,7 @@ from app.routers import (
     assessments,
     attendance,
     auth,
+    courses,
     departments,
     integrations,
     notifications,
@@ -43,6 +44,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(departments.router)
 app.include_router(users.router)
+app.include_router(courses.router)
 app.include_router(trainings.router)
 app.include_router(sessions.router)
 app.include_router(attendance.router)

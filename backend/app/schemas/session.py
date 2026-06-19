@@ -2,7 +2,7 @@ from datetime import date, datetime, time
 
 from pydantic import BaseModel, Field
 
-from app.models.training import SessionMode
+from app.models.training import SessionMode, SessionStatus
 from app.schemas.base import ORMModel
 
 
@@ -37,4 +37,5 @@ class SessionOut(ORMModel):
     location: str | None
     mode: SessionMode
     meeting_link: str | None
+    status: SessionStatus
     created_at: datetime

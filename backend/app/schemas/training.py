@@ -40,6 +40,7 @@ class TrainingOut(ORMModel):
     start_date: date | None
     end_date: date | None
     capacity: int | None
+    total_sessions: int | None
     status: TrainingStatus
     created_by: int | None
     created_at: datetime
