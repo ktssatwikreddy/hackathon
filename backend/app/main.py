@@ -9,6 +9,7 @@ from app import models  # noqa: F401  (ensures models are registered on Base)
 from app.core.config import get_settings
 from app.core.database import Base, engine
 from app.routers import (
+    ai,
     assessments,
     attendance,
     auth,
@@ -43,6 +44,7 @@ app.include_router(trainings.router)
 app.include_router(sessions.router)
 app.include_router(attendance.router)
 app.include_router(assessments.router)
+app.include_router(ai.router)
 
 
 @app.on_event("startup")
