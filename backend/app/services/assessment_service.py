@@ -246,6 +246,7 @@ def question_analytics(db: Session, assessment_id: int, current_user: User) -> l
         out.append(
             {
                 "id": q.id,
+                "assessment_id": assessment_id,
                 "question_text": q.question_text,
                 "question_type": q.question_type,
                 "options": q.options,
