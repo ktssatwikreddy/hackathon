@@ -1,0 +1,17 @@
+venv/
+backend/venv/
+__pycache__/
+*.pyc
+.env
+backend/.env
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+node_modules/
+frontend/node_modules/
+frontend/dist/
+*.log
+runtime/*.db
+*.db
+backend/tapms.db
+.venv/
