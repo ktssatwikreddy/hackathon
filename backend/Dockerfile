@@ -22,7 +22,8 @@ COPY app ./app
 COPY alembic ./alembic
 COPY alembic.ini ./
 COPY entrypoint.sh ./
-RUN chmod +x entrypoint.sh
+# Strip any CRLF (Windows checkout) so the script runs under /bin/sh, then chmod.
+RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
 
 EXPOSE 8000
 ENTRYPOINT ["/app/entrypoint.sh"]
