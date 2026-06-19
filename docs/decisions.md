@@ -60,3 +60,16 @@ zustand per §1's "pick one" — chosen over Context for its tiny API and built-
 RR6 + RQ5 is also the most battle-tested combination, minimising build/runtime
 surprises. Auth tokens persist via zustand `persist`; axios interceptors handle
 bearer injection and a single silent refresh on 401.
+
+## D7 — QR attendance: signed JWT + revocable token row
+**Decision:** A session QR encodes `{FRONTEND_BASE_URL}/attend/<token>`, where
+the token is a signed JWT (`type=attendance`, `sub=session_id`, `jti`, 15-min
+`exp`). Each issued token is also persisted in `attendance_tokens`
+(`jti`, `token`, `is_active`, `expires_at`); generating a new QR deactivates the
+prior one (one active token per session), and check-in validates expiry →
+active-jti → enrollment before an idempotent mark.
+**Why:** A pure stateless JWT can't be revoked before expiry; the `jti` row lets
+a trainer rotate/revoke a leaked QR immediately. The phone camera opening the
+URL (rather than an in-app scanner) keeps the student flow to a single web page.
+Self check-in sets `marked_by = the student` with a "self check-in via QR" note,
+and re-scans return `already_marked` (200) instead of erroring.

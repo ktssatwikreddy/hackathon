@@ -78,6 +78,22 @@ Each role sees a different sidebar and dashboard.
 
 ---
 
+## QR-code attendance flow
+
+1. **Admin** → *Schedule Course*: name the course, assign a trainer, and add the
+   session schedule (one row per session). Submitting creates the course and all
+   its sessions in one go.
+2. **Trainer** → open the assigned course → *Sessions* tab → **End & QR** on a
+   session. A QR code appears with a live expiry countdown (15 min default);
+   it can be regenerated or revoked.
+3. **Student** scans the QR with their phone camera → it opens
+   `/attend/<token>` → they log in (if needed) → attendance is marked
+   **present**. Re-scanning just says "already marked". The token is a
+   short-lived signed JWT bound to the session; only one is active at a time and
+   it is checked against enrollment before marking.
+
+---
+
 ## Environment variables (`backend/.env`)
 
 | Variable | Default | Notes |
@@ -89,6 +105,8 @@ Each role sees a different sidebar and dashboard.
 | `MOCK_AI` | `true` | `true` = no API key needed; `false` requires `GROQ_API_KEY` |
 | `GROQ_API_KEY` | _(empty)_ | Required only when `MOCK_AI=false` |
 | `GROQ_MODEL` | `llama-3.3-70b-versatile` | Groq model id |
+| `ATTENDANCE_TOKEN_TTL_MINUTES` | `15` | How long a generated session QR stays valid |
+| `FRONTEND_BASE_URL` | `http://localhost:5173` | Base URL the QR code points at |
 | `ENVIRONMENT` | `local` | `local` auto-creates tables on boot |
 
 **Using the real Groq backend:** set `MOCK_AI=false` and `GROQ_API_KEY=...` —

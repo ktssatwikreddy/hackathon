@@ -18,6 +18,8 @@ a one-line summary. All non-auth routes require a Bearer access token.
 | Auth | `POST /auth/login` · `/auth/refresh` · `/auth/logout` · `/auth/forgot-password` · `/auth/reset-password` · `GET /auth/me` |
 | Departments | `GET/POST /departments` · `PATCH/DELETE /departments/{id}` (admin writes) |
 | Users | `GET/POST /users` · `GET/PATCH/DELETE /users/{id}` · list filters `?role=&department_id=&search=&page=&size=` |
+| Courses | `POST /courses` (admin: create training + scheduled sessions in one call) |
+| QR attendance | `POST /sessions/{id}/end` · `POST/GET/DELETE /sessions/{id}/qr` (staff) · `POST /attendance/checkin` (student, body `{token}`) |
 | Trainings | `GET/POST /trainings` · `GET/PATCH/DELETE /trainings/{id}` · enrollments: `GET`/bulk `POST /trainings/{id}/enrollments`, `DELETE /trainings/{id}/enrollments/{uid}` |
 | Sessions | `GET /sessions?training_id=&from=&to=` · `POST` · `PATCH/DELETE /sessions/{id}` |
 | Attendance | `POST /attendance/bulk` · `GET /attendance?session_id=` · `GET /attendance/me` |
