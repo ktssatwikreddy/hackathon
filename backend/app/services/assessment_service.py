@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.models import (
@@ -104,6 +104,14 @@ def update_assessment(
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(assessment, key, value)
     return assessment
+
+
+def delete_assessment(db: Session, assessment_id: int, current_user: User) -> None:
+    assessment = get_assessment(db, assessment_id)
+    assert_training_access(current_user, get_training(db, assessment.training_id))
+    # Remove dependent results explicitly (questions cascade via the ORM relationship).
+    db.execute(delete(AssessmentResult).where(AssessmentResult.assessment_id == assessment_id))
+    db.delete(assessment)
 
 
 def add_questions(

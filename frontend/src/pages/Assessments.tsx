@@ -1,10 +1,13 @@
+import { Delete } from "@mui/icons-material";
 import {
   Box,
   Card,
   CardActionArea,
+  CardActions,
   CardContent,
   Chip,
   Grid,
+  IconButton,
   Paper,
   Stack,
   Table,
@@ -15,16 +18,29 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
+import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { assessmentsApi } from "../api/resources";
+import ConfirmDialog from "../components/ConfirmDialog";
+import RoleGuard from "../components/RoleGuard";
 import { useAssessments, useMyResults } from "../hooks";
 import { useAuth } from "../store/auth";
+import type { Assessment } from "../types";
 
 export default function Assessments() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const user = useAuth((s) => s.user)!;
   const { data: assessments, isLoading } = useAssessments();
   const { data: myResults } = useMyResults();
+  const [toDelete, setToDelete] = useState<Assessment | null>(null);
+
+  const handleDelete = async (id: number) => {
+    await assessmentsApi.remove(id);
+    qc.invalidateQueries({ queryKey: ["assessments"] });
+  };
 
   return (
     <Box>
@@ -50,6 +66,13 @@ export default function Assessments() {
                   </Stack>
                 </CardContent>
               </CardActionArea>
+              <RoleGuard roles={["super_admin"]}>
+                <CardActions sx={{ justifyContent: "flex-end" }}>
+                  <IconButton size="small" color="error" onClick={() => setToDelete(a)}>
+                    <Delete fontSize="small" />
+                  </IconButton>
+                </CardActions>
+              </RoleGuard>
             </Card>
           </Grid>
         ))}
@@ -85,6 +108,15 @@ export default function Assessments() {
           </TableContainer>
         </>
       )}
+
+      <ConfirmDialog
+        open={!!toDelete}
+        title="Delete quiz"
+        message={`Delete "${toDelete?.title}"? Its questions and all attempt results will be removed. This cannot be undone.`}
+        confirmText="Delete"
+        onClose={() => setToDelete(null)}
+        onConfirm={() => toDelete && handleDelete(toDelete.id)}
+      />
     </Box>
   );
 }

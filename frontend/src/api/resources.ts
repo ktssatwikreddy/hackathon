@@ -140,6 +140,7 @@ export const assessmentsApi = {
   get: (id: number) => api.get<Assessment>(`/assessments/${id}`).then((r) => r.data),
   create: (body: Record<string, unknown>) =>
     api.post<Assessment>("/assessments", body).then((r) => r.data),
+  remove: (id: number) => api.delete(`/assessments/${id}`).then((r) => r.data),
   questions: (id: number) =>
     api.get<QuestionPublic[]>(`/assessments/${id}/questions`).then((r) => r.data),
   submit: (id: number, answers: Record<string, string>, timeTaken?: number) =>

@@ -1,9 +1,10 @@
-import { Add } from "@mui/icons-material";
+import { Add, Delete } from "@mui/icons-material";
 import {
   Box,
   Button,
   Card,
   CardActionArea,
+  CardActions,
   CardContent,
   Chip,
   Dialog,
@@ -11,6 +12,7 @@ import {
   DialogContent,
   DialogTitle,
   Grid,
+  IconButton,
   MenuItem,
   Stack,
   TextField,
@@ -20,9 +22,10 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
+import ConfirmDialog from "../components/ConfirmDialog";
 import RoleGuard from "../components/RoleGuard";
 import { useDepartments, useTrainingMutations, useTrainings } from "../hooks";
-import type { TrainingStatus } from "../types";
+import type { Training, TrainingStatus } from "../types";
 
 const STATUS_COLOR: Record<TrainingStatus, "default" | "info" | "success" | "warning" | "error"> = {
   draft: "default",
@@ -46,8 +49,9 @@ export default function Trainings() {
   const [search, setSearch] = useState("");
   const { data, isLoading } = useTrainings({ status: status || undefined, search: search || undefined, size: 50 });
   const { data: departments } = useDepartments();
-  const { create } = useTrainingMutations();
+  const { create, remove } = useTrainingMutations();
   const [open, setOpen] = useState(false);
+  const [toDelete, setToDelete] = useState<Training | null>(null);
   const { register, handleSubmit, reset } = useForm<TForm>();
 
   const onSubmit = (form: TForm) => {
@@ -101,10 +105,26 @@ export default function Trainings() {
                   </Typography>
                 </CardContent>
               </CardActionArea>
+              <RoleGuard roles={["super_admin"]}>
+                <CardActions sx={{ justifyContent: "flex-end" }}>
+                  <IconButton size="small" color="error" onClick={() => setToDelete(t)}>
+                    <Delete fontSize="small" />
+                  </IconButton>
+                </CardActions>
+              </RoleGuard>
             </Card>
           </Grid>
         ))}
       </Grid>
+
+      <ConfirmDialog
+        open={!!toDelete}
+        title="Delete course"
+        message={`Delete "${toDelete?.title}"? This removes its sessions, enrollments, attendance and assessments. This cannot be undone.`}
+        confirmText="Delete"
+        onClose={() => setToDelete(null)}
+        onConfirm={() => toDelete && remove.mutate(toDelete.id)}
+      />
 
       <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>New Training</DialogTitle>

@@ -52,3 +52,20 @@ def test_course_requires_valid_trainer(client, seeded):
     body = _course_body(seeded["employee"].id)
     r = client.post("/api/courses", json=body, headers=admin_h(client))
     assert r.status_code == 422
+
+
+def test_admin_deletes_course_cascades(client, seeded):
+    h = admin_h(client)
+    tid = client.post("/api/courses", json=_course_body(seeded["trainer"].id), headers=h).json()["id"]
+    # Add an enrollment + assessment so deletion must clean dependents.
+    client.post(f"/api/trainings/{tid}/enrollments", json={"user_ids": [seeded["employee"].id]}, headers=h)
+    client.post(
+        "/api/assessments",
+        json={"training_id": tid, "title": "Q", "questions": [{"question_text": "x", "question_type": "short", "correct_answer": "y"}]},
+        headers=h,
+    )
+    r = client.delete(f"/api/trainings/{tid}", headers=h)
+    assert r.status_code == 200
+    assert client.get(f"/api/trainings/{tid}", headers=h).status_code == 404
+    # Sessions for the deleted course are gone too.
+    assert client.get(f"/api/sessions?training_id={tid}", headers=h).json() == []

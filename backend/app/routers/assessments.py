@@ -5,6 +5,7 @@ from app.core.audit import audit_log
 from app.core.database import get_db
 from app.core.deps import get_current_user, require_roles
 from app.models import Assessment, User, UserRole
+from app.schemas.base import Message
 from app.schemas.assessment import (
     AssessmentCreate,
     AssessmentOut,
@@ -77,6 +78,19 @@ def update_assessment(
     db.commit()
     db.refresh(assessment)
     return _to_out(db, assessment)
+
+
+@router.delete("/{assessment_id}", response_model=Message, summary="Delete an assessment")
+def delete_assessment(
+    assessment_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(staff_only),
+):
+    assessment_service.delete_assessment(db, assessment_id, current_user)
+    audit_log(db, action="delete", entity="assessment", entity_id=assessment_id, user_id=current_user.id, request=request)
+    db.commit()
+    return Message(message="Assessment deleted")
 
 
 @router.get("/{assessment_id}/questions", response_model=list[QuestionPublic], summary="List questions (no answer key)")

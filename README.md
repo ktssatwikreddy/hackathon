@@ -67,12 +67,12 @@ The only thing that changes the database is `DATABASE_URL` in
 
 `python -m app.seed` (and the Docker first boot) print these:
 
-| Role        | Email                    | Password      |
-|-------------|--------------------------|---------------|
-| Super Admin | `admin@tapms.com`        | `Admin@123`   |
-| Trainer     | `trainer1@tapms.com`     | `Trainer@123` |
-| Trainer     | `trainer2@tapms.com`     | `Trainer@123` |
-| Employees   | `employee1..10@tapms.com`| `Employee@123`|
+| Role        | Email                  | Password      |
+|-------------|------------------------|---------------|
+| Super Admin | `admin@tapms.com`      | `Admin@123`   |
+| Trainer     | `trainer1@tapms.com`   | `Trainer@123` |
+| Employee 1  | `employee1@tapms.com`  | `Employee@123`|
+| Employee 2  | `employee2@tapms.com`  | `Employee@123`|
 
 Each role sees a different sidebar and dashboard.
 

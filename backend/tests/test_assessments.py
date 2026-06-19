@@ -102,6 +102,21 @@ def test_submit_requires_enrollment(client, seeded):
     assert r.status_code == 403
 
 
+def test_admin_deletes_assessment_with_results(client, seeded):
+    _, aid = _setup(client, seeded)
+    # Create a result so we exercise the dependent-row cleanup.
+    qs = client.get(f"/api/assessments/{aid}/questions", headers=employee_h(client)).json()
+    client.post(f"/api/assessments/{aid}/submit", json={"answers": {str(qs[0]["id"]): "4"}}, headers=employee_h(client))
+    r = client.delete(f"/api/assessments/{aid}", headers=admin_h(client))
+    assert r.status_code == 200
+    assert client.get(f"/api/assessments/{aid}", headers=admin_h(client)).status_code == 404
+
+
+def test_employee_cannot_delete_assessment(client, seeded):
+    _, aid = _setup(client, seeded)
+    assert client.delete(f"/api/assessments/{aid}", headers=employee_h(client)).status_code == 403
+
+
 def test_results_visible_to_staff_and_self(client, seeded):
     _, aid = _setup(client, seeded)
     qs = client.get(f"/api/assessments/{aid}/questions", headers=employee_h(client)).json()

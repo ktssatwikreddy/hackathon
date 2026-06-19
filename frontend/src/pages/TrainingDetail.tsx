@@ -196,12 +196,15 @@ function SessionsTab({ trainingId }: { trainingId: number }) {
     setOpen(false);
   };
 
-  const endAndGenerate = async (s: { id: number; title: string }) => {
-    await sessionsApi.end(s.id);
+  const generateQr = async (s: { id: number; title: string }) => {
     const token = await qrApi.generate(s.id);
-    qc.invalidateQueries({ queryKey: ["sessions"] });
     setQrSession(s);
     setQrToken(token);
+  };
+
+  const endSession = async (id: number) => {
+    await sessionsApi.end(id);
+    qc.invalidateQueries({ queryKey: ["sessions"] });
   };
 
   const regenerate = async () => {
@@ -228,9 +231,14 @@ function SessionsTab({ trainingId }: { trainingId: number }) {
             key={s.id}
             secondaryAction={
               <RoleGuard roles={["super_admin", "trainer"]}>
-                <Button size="small" variant="outlined" startIcon={<QrCode2 />} onClick={() => endAndGenerate({ id: s.id, title: s.title })}>
-                  {s.status === "ended" ? "Show QR" : "End & QR"}
-                </Button>
+                <Stack direction="row" spacing={1}>
+                  {s.status !== "ended" && (
+                    <Button size="small" onClick={() => endSession(s.id)}>End</Button>
+                  )}
+                  <Button size="small" variant="contained" startIcon={<QrCode2 />} onClick={() => generateQr({ id: s.id, title: s.title })}>
+                    Generate QR
+                  </Button>
+                </Stack>
               </RoleGuard>
             }
           >

@@ -4,6 +4,8 @@ Run with:  python -m app.seed
 
 Idempotent: if the super-admin already exists the script reports the
 credentials and exits without duplicating data.
+
+Demo roster (kept intentionally small): 1 admin, 1 trainer, 2 employees.
 """
 from __future__ import annotations
 
@@ -38,10 +40,6 @@ TRAINER_PASSWORD = "Trainer@123"
 EMPLOYEE_PASSWORD = "Employee@123"
 
 
-def _now() -> datetime:
-    return datetime.now(timezone.utc)
-
-
 def seed() -> None:
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
@@ -55,11 +53,10 @@ def seed() -> None:
         departments = [
             Department(name="Engineering", description="Software engineering teams"),
             Department(name="Sales", description="Revenue and account management"),
-            Department(name="Human Resources", description="People operations"),
         ]
         db.add_all(departments)
         db.flush()
-        eng, sales, hr = departments
+        eng, sales = departments
 
         # --- Super admin ---
         admin = User(
@@ -74,94 +71,75 @@ def seed() -> None:
         )
         db.add(admin)
 
-        # --- Trainers ---
-        trainers = [
-            User(
-                employee_code="EMP0002",
-                name="Tom Trainer",
-                email="trainer1@tapms.com",
-                password_hash=hash_password(TRAINER_PASSWORD),
-                role=UserRole.trainer,
-                department_id=eng.id,
-                designation="Senior Engineering Coach",
-                joining_date=date(2021, 6, 15),
-            ),
+        # --- Trainer (single) ---
+        trainer = User(
+            employee_code="EMP0002",
+            name="Tom Trainer",
+            email="trainer1@tapms.com",
+            password_hash=hash_password(TRAINER_PASSWORD),
+            role=UserRole.trainer,
+            department_id=eng.id,
+            designation="Senior Engineering Coach",
+            joining_date=date(2021, 6, 15),
+        )
+        db.add(trainer)
+
+        # --- Employees (two) ---
+        employees = [
             User(
                 employee_code="EMP0003",
-                name="Tina Teacher",
-                email="trainer2@tapms.com",
-                password_hash=hash_password(TRAINER_PASSWORD),
-                role=UserRole.trainer,
-                department_id=sales.id,
-                designation="Sales Enablement Lead",
-                joining_date=date(2022, 2, 1),
+                name="Erin Employee",
+                email="employee1@tapms.com",
+                password_hash=hash_password(EMPLOYEE_PASSWORD),
+                role=UserRole.employee,
+                department_id=eng.id,
+                designation="Associate Engineer",
+                joining_date=date(2023, 1, 20),
+            ),
+            User(
+                employee_code="EMP0004",
+                name="Evan Employee",
+                email="employee2@tapms.com",
+                password_hash=hash_password(EMPLOYEE_PASSWORD),
+                role=UserRole.employee,
+                department_id=eng.id,
+                designation="Associate Engineer",
+                joining_date=date(2023, 2, 10),
             ),
         ]
-        db.add_all(trainers)
-
-        # --- Employees ---
-        dept_cycle = [eng, sales, hr]
-        employees = []
-        for i in range(1, 11):
-            dept = dept_cycle[(i - 1) % len(dept_cycle)]
-            employees.append(
-                User(
-                    employee_code=f"EMP{i + 3:04d}",
-                    name=f"Employee {i:02d}",
-                    email=f"employee{i}@tapms.com",
-                    password_hash=hash_password(EMPLOYEE_PASSWORD),
-                    role=UserRole.employee,
-                    department_id=dept.id,
-                    designation="Associate",
-                    joining_date=date(2023, 1, 1) + timedelta(days=i * 20),
-                )
-            )
         db.add_all(employees)
         db.flush()
 
-        # --- Trainings ---
+        # --- Trainings (all run by the single trainer) ---
         today = date.today()
-        trainings = [
-            Training(
-                title="Python Fundamentals",
-                description="Core Python for new engineers.",
-                category="Technical",
-                trainer_id=trainers[0].id,
-                department_id=eng.id,
-                start_date=today - timedelta(days=14),
-                end_date=today + timedelta(days=14),
-                capacity=20,
-                status=TrainingStatus.active,
-                created_by=admin.id,
-            ),
-            Training(
-                title="Consultative Selling",
-                description="Modern B2B sales techniques.",
-                category="Sales",
-                trainer_id=trainers[1].id,
-                department_id=sales.id,
-                start_date=today - timedelta(days=30),
-                end_date=today - timedelta(days=2),
-                capacity=15,
-                status=TrainingStatus.completed,
-                created_by=admin.id,
-            ),
-            Training(
-                title="Workplace Compliance 101",
-                description="Mandatory compliance and ethics training.",
-                category="Compliance",
-                trainer_id=trainers[0].id,
-                department_id=None,  # open to all
-                start_date=today + timedelta(days=7),
-                end_date=today + timedelta(days=21),
-                capacity=50,
-                status=TrainingStatus.scheduled,
-                created_by=admin.id,
-            ),
-        ]
-        db.add_all(trainings)
+        python_training = Training(
+            title="Python Fundamentals",
+            description="Core Python for new engineers.",
+            category="Technical",
+            trainer_id=trainer.id,
+            department_id=eng.id,
+            start_date=today - timedelta(days=14),
+            end_date=today + timedelta(days=14),
+            capacity=20,
+            total_sessions=2,
+            status=TrainingStatus.active,
+            created_by=admin.id,
+        )
+        compliance_training = Training(
+            title="Workplace Compliance 101",
+            description="Mandatory compliance and ethics training.",
+            category="Compliance",
+            trainer_id=trainer.id,
+            department_id=None,  # open to all
+            start_date=today + timedelta(days=7),
+            end_date=today + timedelta(days=21),
+            capacity=50,
+            total_sessions=1,
+            status=TrainingStatus.scheduled,
+            created_by=admin.id,
+        )
+        db.add_all([python_training, compliance_training])
         db.flush()
-        python_training, sales_training, compliance_training = trainings
 
         # --- Sessions ---
         sessions = [
@@ -184,60 +162,41 @@ def seed() -> None:
                 location="Room A",
                 mode=SessionMode.offline,
             ),
-            TrainingSession(
-                training_id=sales_training.id,
-                title="Discovery Calls",
-                session_date=today - timedelta(days=20),
-                start_time=time(14, 0),
-                end_time=time(16, 0),
-                location="Online",
-                mode=SessionMode.online,
-                meeting_link="https://meet.example.com/sales-1",
-            ),
         ]
         db.add_all(sessions)
         db.flush()
 
-        # --- Enrollments ---
-        # Engineering employees -> Python; Sales employees -> Sales training.
-        eng_employees = [e for e in employees if e.department_id == eng.id]
-        sales_employees = [e for e in employees if e.department_id == sales.id]
-
-        enrollments = []
-        for emp in eng_employees:
-            enrollments.append(
+        # --- Enrollments: both employees in Python Fundamentals ---
+        for emp in employees:
+            db.add(
                 Enrollment(
                     user_id=emp.id,
                     training_id=python_training.id,
                     status=EnrollmentStatus.enrolled,
                 )
             )
-        for emp in sales_employees:
-            enrollments.append(
-                Enrollment(
-                    user_id=emp.id,
-                    training_id=sales_training.id,
-                    status=EnrollmentStatus.completed,
-                )
-            )
-        db.add_all(enrollments)
         db.flush()
 
         # --- Sample attendance (first Python session) ---
         first_session = sessions[0]
-        for idx, emp in enumerate(eng_employees):
-            status = AttendanceStatus.present if idx % 3 != 0 else AttendanceStatus.late
-            db.add(
-                Attendance(
-                    session_id=first_session.id,
-                    user_id=emp.id,
-                    status=status,
-                    marked_by=trainers[0].id,
-                    notes=None,
-                )
+        db.add(
+            Attendance(
+                session_id=first_session.id,
+                user_id=employees[0].id,
+                status=AttendanceStatus.present,
+                marked_by=trainer.id,
             )
+        )
+        db.add(
+            Attendance(
+                session_id=first_session.id,
+                user_id=employees[1].id,
+                status=AttendanceStatus.late,
+                marked_by=trainer.id,
+            )
+        )
 
-        # --- One completed assessment with questions + results ---
+        # --- One assessment with questions + a completed result ---
         assessment = Assessment(
             training_id=python_training.id,
             title="Python Fundamentals Quiz",
@@ -281,12 +240,10 @@ def seed() -> None:
         db.add_all(questions)
         db.flush()
 
-        # One employee has completed the assessment (2/3 -> pass).
-        first_emp = eng_employees[0]
         db.add(
             AssessmentResult(
                 assessment_id=assessment.id,
-                user_id=first_emp.id,
+                user_id=employees[0].id,
                 score=2,
                 max_score=3,
                 result=AssessmentResultStatus.pass_,
@@ -311,9 +268,9 @@ def _print_credentials() -> None:
     print("  TAPMS seeded login credentials")
     print("=" * 56)
     print(f"  Super Admin : {ADMIN_EMAIL} / {ADMIN_PASSWORD}")
-    print(f"  Trainer 1   : trainer1@tapms.com / {TRAINER_PASSWORD}")
-    print(f"  Trainer 2   : trainer2@tapms.com / {TRAINER_PASSWORD}")
-    print(f"  Employees   : employee1..10@tapms.com / {EMPLOYEE_PASSWORD}")
+    print(f"  Trainer     : trainer1@tapms.com / {TRAINER_PASSWORD}")
+    print(f"  Employee 1  : employee1@tapms.com / {EMPLOYEE_PASSWORD}")
+    print(f"  Employee 2  : employee2@tapms.com / {EMPLOYEE_PASSWORD}")
     print("=" * 56)
 
 

@@ -1,12 +1,18 @@
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.models import (
+    Assessment,
+    AssessmentQuestion,
+    AssessmentResult,
+    Attendance,
+    AttendanceToken,
     Department,
     Enrollment,
     EnrollmentStatus,
     Training,
+    TrainingSession,
     TrainingStatus,
     User,
     UserRole,
@@ -106,6 +112,24 @@ def update_training(
 def delete_training(db: Session, training_id: int, current_user: User) -> None:
     training = get_training(db, training_id)
     assert_training_access(current_user, training)
+
+    # Clean up dependents that don't cascade via ORM relationships.
+    session_ids = list(
+        db.scalars(select(TrainingSession.id).where(TrainingSession.training_id == training_id))
+    )
+    if session_ids:
+        db.execute(delete(Attendance).where(Attendance.session_id.in_(session_ids)))
+        db.execute(delete(AttendanceToken).where(AttendanceToken.session_id.in_(session_ids)))
+
+    assessment_ids = list(
+        db.scalars(select(Assessment.id).where(Assessment.training_id == training_id))
+    )
+    if assessment_ids:
+        db.execute(delete(AssessmentResult).where(AssessmentResult.assessment_id.in_(assessment_ids)))
+        db.execute(delete(AssessmentQuestion).where(AssessmentQuestion.assessment_id.in_(assessment_ids)))
+        db.execute(delete(Assessment).where(Assessment.id.in_(assessment_ids)))
+
+    # sessions + enrollments cascade via the Training relationships.
     db.delete(training)
 
 
