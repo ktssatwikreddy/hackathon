@@ -1,6 +1,11 @@
 """Shared pytest fixtures: in-memory SQLite + dependency overrides."""
 from __future__ import annotations
 
+import os
+
+# Force the mock AI backend for tests regardless of .env (no network calls).
+os.environ["MOCK_AI"] = "true"
+
 from datetime import date
 
 import pytest

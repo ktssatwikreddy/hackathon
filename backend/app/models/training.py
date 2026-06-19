@@ -124,6 +124,28 @@ class TrainingSession(Base):
     training: Mapped[Training] = relationship(back_populates="sessions")
 
 
+class EnrollmentRequestStatus(str, Enum):
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
+
+
+class EnrollmentRequest(Base):
+    __tablename__ = "enrollment_requests"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    training_id: Mapped[int] = mapped_column(ForeignKey("trainings.id"), index=True)
+    status: Mapped[EnrollmentRequestStatus] = mapped_column(
+        enum_column(EnrollmentRequestStatus), default=EnrollmentRequestStatus.pending
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    decided_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class SessionMaterial(Base):
     """A file/resource a trainer attaches to a session; enrolled users can view it."""
 

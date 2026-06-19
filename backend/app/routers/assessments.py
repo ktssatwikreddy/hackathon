@@ -32,9 +32,9 @@ def _to_out(db: Session, assessment: Assessment) -> AssessmentOut:
 def list_assessments(
     training_id: int | None = None,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    return [_to_out(db, a) for a in assessment_service.list_assessments(db, training_id)]
+    return [_to_out(db, a) for a in assessment_service.list_assessments(db, training_id, current_user)]
 
 
 @router.get("/me/results", response_model=list[ResultOut], summary="My assessment results")

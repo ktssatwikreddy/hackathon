@@ -16,6 +16,8 @@ from app.models.core import (
 from app.models.training import (
     AttendanceToken,
     Enrollment,
+    EnrollmentRequest,
+    EnrollmentRequestStatus,
     EnrollmentStatus,
     SessionMaterial,
     SessionMode,
@@ -40,6 +42,8 @@ __all__ = [
     "UserRole",
     "AttendanceToken",
     "Enrollment",
+    "EnrollmentRequest",
+    "EnrollmentRequestStatus",
     "EnrollmentStatus",
     "SessionMaterial",
     "SessionMode",

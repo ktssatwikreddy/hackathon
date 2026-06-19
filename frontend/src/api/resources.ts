@@ -115,6 +115,25 @@ export const coursesApi = {
     api.post("/courses", body).then((r) => r.data),
 };
 
+// --- Enrollment requests ---
+export interface EnrollmentRequestRow {
+  id: number;
+  user_id: number;
+  training_id: number;
+  user_name: string;
+  training_title: string;
+  status: string;
+  created_at: string;
+}
+export const enrollmentRequestsApi = {
+  available: () => api.get<Training[]>("/enrollment-requests/available").then((r) => r.data),
+  create: (trainingId: number) =>
+    api.post("/enrollment-requests", { training_id: trainingId }).then((r) => r.data),
+  list: () => api.get<EnrollmentRequestRow[]>("/enrollment-requests").then((r) => r.data),
+  approve: (id: number) => api.post(`/enrollment-requests/${id}/approve`).then((r) => r.data),
+  reject: (id: number) => api.post(`/enrollment-requests/${id}/reject`).then((r) => r.data),
+};
+
 // --- Session materials (files) ---
 export interface Material {
   id: number;

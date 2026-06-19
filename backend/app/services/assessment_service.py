@@ -38,10 +38,25 @@ def question_count(db: Session, assessment_id: int) -> int:
     ) or 0
 
 
-def list_assessments(db: Session, training_id: int | None = None) -> list[Assessment]:
+def list_assessments(
+    db: Session, training_id: int | None = None, current_user: User | None = None
+) -> list[Assessment]:
+    from app.models import Enrollment, Training, UserRole
+
     stmt = select(Assessment)
     if training_id is not None:
         stmt = stmt.where(Assessment.training_id == training_id)
+
+    # Employees only see assessments for trainings they're enrolled in.
+    if current_user is not None and current_user.role == UserRole.employee:
+        enrolled = select(Enrollment.training_id).where(Enrollment.user_id == current_user.id)
+        stmt = stmt.where(Assessment.training_id.in_(enrolled))
+    elif current_user is not None and current_user.role == UserRole.trainer:
+        owned = select(Training.id).where(
+            (Training.trainer_id == current_user.id) | (Training.created_by == current_user.id)
+        )
+        stmt = stmt.where(Assessment.training_id.in_(owned))
+
     return list(db.scalars(stmt.order_by(Assessment.id.desc())))
 
 

@@ -3,7 +3,9 @@ import { Navigate, createBrowserRouter } from "react-router-dom";
 import AppLayout from "../layouts/AppLayout";
 import AIInsights from "../pages/AIInsights";
 import Attend from "../pages/Attend";
+import BrowseCourses from "../pages/BrowseCourses";
 import CourseCreate from "../pages/CourseCreate";
+import Requests from "../pages/Requests";
 import AssessmentDetail from "../pages/AssessmentDetail";
 import Assessments from "../pages/Assessments";
 import AttendanceMark from "../pages/AttendanceMark";
@@ -36,6 +38,8 @@ export const router = createBrowserRouter([
       { path: "users", element: <ProtectedRoute roles={["super_admin"]}><Users /></ProtectedRoute> },
       { path: "departments", element: <ProtectedRoute roles={["super_admin"]}><Departments /></ProtectedRoute> },
       { path: "courses/new", element: <ProtectedRoute roles={["super_admin"]}><CourseCreate /></ProtectedRoute> },
+      { path: "browse", element: <ProtectedRoute roles={["employee"]}><BrowseCourses /></ProtectedRoute> },
+      { path: "requests", element: <ProtectedRoute roles={["super_admin", "trainer"]}><Requests /></ProtectedRoute> },
       { path: "trainings", element: <Trainings /> },
       { path: "trainings/:id", element: <TrainingDetail /> },
       { path: "sessions", element: <ProtectedRoute roles={["super_admin", "trainer"]}><Sessions /></ProtectedRoute> },
