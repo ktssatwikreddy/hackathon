@@ -14,9 +14,11 @@ from app.models.core import (
     UserRole,
 )
 from app.models.training import (
+    AttendanceToken,
     Enrollment,
     EnrollmentStatus,
     SessionMode,
+    SessionStatus,
     Training,
     TrainingSession,
     TrainingStatus,
@@ -35,9 +37,11 @@ __all__ = [
     "Notification",
     "User",
     "UserRole",
+    "AttendanceToken",
     "Enrollment",
     "EnrollmentStatus",
     "SessionMode",
+    "SessionStatus",
     "Training",
     "TrainingSession",
     "TrainingStatus",

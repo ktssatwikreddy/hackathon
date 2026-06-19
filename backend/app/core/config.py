@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
 
+    # QR attendance
+    attendance_token_ttl_minutes: int = 15
+    frontend_base_url: str = "http://localhost:5173"
+
     # AI
     mock_ai: bool = True
     groq_api_key: str | None = None

@@ -37,6 +37,12 @@ class SessionMode(str, Enum):
     hybrid = "hybrid"
 
 
+class SessionStatus(str, Enum):
+    scheduled = "scheduled"
+    ended = "ended"
+    cancelled = "cancelled"
+
+
 class Training(Base):
     __tablename__ = "trainings"
 
@@ -53,6 +59,7 @@ class Training(Base):
     start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     capacity: Mapped[int | None] = mapped_column(nullable=True)
+    total_sessions: Mapped[int | None] = mapped_column(nullable=True)
     status: Mapped[TrainingStatus] = mapped_column(
         enum_column(TrainingStatus), default=TrainingStatus.draft
     )
@@ -107,8 +114,32 @@ class TrainingSession(Base):
         enum_column(SessionMode), default=SessionMode.offline
     )
     meeting_link: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    status: Mapped[SessionStatus] = mapped_column(
+        enum_column(SessionStatus), default=SessionStatus.scheduled
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 
     training: Mapped[Training] = relationship(back_populates="sessions")
+
+
+class AttendanceToken(Base):
+    """A QR attendance token issued for a session (the token value is a signed JWT).
+
+    Persisting the jti lets us revoke/rotate a session's active QR before expiry.
+    """
+
+    __tablename__ = "attendance_tokens"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    session_id: Mapped[int] = mapped_column(
+        ForeignKey("training_sessions.id"), index=True
+    )
+    jti: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    is_active: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
