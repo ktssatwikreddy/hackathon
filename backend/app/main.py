@@ -8,7 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app import models  # noqa: F401  (ensures models are registered on Base)
 from app.core.config import get_settings
 from app.core.database import Base, engine
-from app.routers import auth, departments, sessions, trainings, users
+from app.routers import attendance, auth, departments, sessions, trainings, users
 
 settings = get_settings()
 logger = logging.getLogger("tapms")
@@ -33,6 +33,7 @@ app.include_router(departments.router)
 app.include_router(users.router)
 app.include_router(trainings.router)
 app.include_router(sessions.router)
+app.include_router(attendance.router)
 
 
 @app.on_event("startup")
