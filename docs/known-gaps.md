@@ -10,3 +10,9 @@ left in committed code — they live here instead.
 - **Assessments allow unlimited attempts.** Each submit creates a new result
   row; there is no attempt cap or "best/latest" selection. Kept simple so the
   demo can retake freely.
+- **Docker `compose up` not live-verified in the build environment.**
+  `docker compose build` succeeds (both images build clean), but the Docker
+  daemon became unavailable before a live `compose up` could be run here. The
+  no-Docker path (uvicorn + npm) is fully verified. Run `docker compose up
+  --build` on a host with a running daemon to bring up MySQL + backend +
+  frontend at http://localhost:5173.

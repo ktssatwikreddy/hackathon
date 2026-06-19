@@ -1,0 +1,51 @@
+# Full stack: MySQL + FastAPI backend + nginx-served frontend.
+# The backend flips from SQLite to MySQL purely via DATABASE_URL below.
+# Alembic migrations run on backend start; seed runs only when SEED=true.
+#
+#   docker compose up --build       # app at http://localhost:5173
+#
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: tapms
+      MYSQL_USER: tapms_user
+      MYSQL_PASSWORD: tapms_password
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ptapms_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build: ./backend
+    environment:
+      ENVIRONMENT: production
+      # The single line that switches the DB. Comment out to fall back to SQLite.
+      DATABASE_URL: mysql+pymysql://tapms_user:tapms_password@mysql:3306/tapms
+      JWT_SECRET_KEY: change-me-before-production
+      MOCK_AI: ${MOCK_AI:-true}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: llama-3.3-70b-versatile
+      # Populate demo data on first boot. Set to false for an empty DB.
+      SEED: ${SEED:-true}
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
