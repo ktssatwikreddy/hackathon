@@ -12,6 +12,7 @@ from app.models import (
     UserRole,
 )
 from app.schemas.training import TrainingCreate, TrainingUpdate
+from app.services import notification_service
 
 
 def assert_training_access(user: User, training: Training) -> None:
@@ -141,6 +142,14 @@ def bulk_enroll(
         )
         db.add(enrollment)
         created.append(enrollment)
+        notification_service.notify(
+            db,
+            uid,
+            title="You've been enrolled in a training",
+            message=f"You are now enrolled in '{training.title}'.",
+            type="enrollment",
+            link=f"/trainings/{training_id}",
+        )
     return created
 
 

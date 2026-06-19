@@ -14,6 +14,9 @@ from app.routers import (
     attendance,
     auth,
     departments,
+    integrations,
+    notifications,
+    reports,
     sessions,
     trainings,
     users,
@@ -45,6 +48,9 @@ app.include_router(sessions.router)
 app.include_router(attendance.router)
 app.include_router(assessments.router)
 app.include_router(ai.router)
+app.include_router(reports.router)
+app.include_router(notifications.router)
+app.include_router(integrations.router)
 
 
 @app.on_event("startup")

@@ -12,6 +12,7 @@ from app.models import (
     User,
 )
 from app.schemas.assessment import AssessmentCreate, AssessmentUpdate, QuestionCreate
+from app.services import notification_service
 from app.services.training_service import assert_training_access, get_training
 
 # Question types that can be graded automatically.
@@ -79,6 +80,19 @@ def create_assessment(
     db.add(assessment)
     db.flush()
     _add_questions(db, assessment, payload.questions)
+
+    # Notify enrolled learners that a new assessment is available.
+    for enrollment in db.scalars(
+        select(Enrollment).where(Enrollment.training_id == payload.training_id)
+    ):
+        notification_service.notify(
+            db,
+            enrollment.user_id,
+            title="New assessment assigned",
+            message=f"'{assessment.title}' is now available for '{training.title}'.",
+            type="assessment",
+            link=f"/assessments/{assessment.id}",
+        )
     return assessment
 
 
