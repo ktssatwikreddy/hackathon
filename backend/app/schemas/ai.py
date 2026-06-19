@@ -5,7 +5,9 @@ from app.models.assessment import QuestionType
 
 class GenerateAssessmentRequest(BaseModel):
     training_id: int
-    material_text: str = Field(min_length=1)
+    # Optional: a topic line ("Fundamentals of Python") OR pasted material.
+    # If blank, questions are generated from the course title + objectives.
+    material_text: str = ""
     num_questions: int = Field(default=5, ge=1, le=50)
     types: list[QuestionType] = [QuestionType.mcq, QuestionType.short]
     objectives: list[str] = []

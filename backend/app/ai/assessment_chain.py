@@ -17,29 +17,33 @@ from app.schemas.ai import GeneratedQuestionList
 logger = logging.getLogger("tapms.ai")
 
 _PROMPT = ChatPromptTemplate.from_template(
-    """You are an expert assessment author. Write {num_questions} high-quality
-questions of these types: {types}, grounded strictly in the material below.
+    """You are an expert assessment author and subject-matter expert. Write
+{num_questions} high-quality exam questions of these types: {types}, on the
+topic below. Use your own authoritative knowledge of the subject — you are NOT
+limited to any supplied text.
 
+Topic: {topic}
 Learning objectives: {objectives}
 
-Material:
+Optional reference material (may be empty — if so, rely on your own expert
+knowledge of the topic; if present, you may use it but are not restricted to it):
 \"\"\"
 {material_text}
 \"\"\"
 
 Strict rules:
-- Test real understanding of specific facts/concepts FROM THE MATERIAL — never
-  generic, templated, or placeholder text.
-- The question_text must be a concrete, self-contained question a learner can
-  answer from the material (mention the actual concept, not "concept 1").
-- For "mcq": provide exactly 4 plausible options that are all realistic and
-  similar in length/style; exactly one is correct. Distractors must be common,
-  believable mistakes — NOT obviously wrong filler. `correct_answer` must be the
-  exact text of the correct option.
-- For "short": `correct_answer` is the concise expected answer (a word/phrase);
+- Write real, substantive questions that genuinely test understanding of the
+  topic. NEVER output generic, templated, or placeholder text like
+  "concept 1", "Correct option", or "Common misconception".
+- Each question_text must be concrete and self-contained, naming the actual
+  concept being tested (e.g. "What does the `len()` function return for a list?").
+- For "mcq": provide exactly 4 realistic options of similar length/style; exactly
+  one is correct and `correct_answer` must equal that option's text verbatim.
+  The 3 distractors must be plausible, common mistakes — not obvious filler.
+- For "short": `correct_answer` is the concise expected answer (word/short phrase);
   options must be null.
-- Vary difficulty and the concepts covered; do not repeat near-duplicate questions.
-- `marks` is a small positive integer (1 for recall, 2 for applied/scenario).
+- Cover a spread of subtopics and difficulty; no near-duplicate questions.
+- `marks`: 1 for recall, 2 for applied/scenario.
 
 Each question must include: question_text, question_type (one of the requested
 types), options (a list of 4 strings for mcq, otherwise null), correct_answer,
@@ -60,8 +64,9 @@ def generate_questions(
     prompt = _PROMPT.format(
         num_questions=num_questions,
         types=", ".join(types),
+        topic=topic,
         objectives="; ".join(objectives) or "general comprehension",
-        material_text=material_text,
+        material_text=material_text or "(none provided)",
     )
     schema = GeneratedQuestionList.model_json_schema()
 

@@ -124,6 +124,25 @@ class TrainingSession(Base):
     training: Mapped[Training] = relationship(back_populates="sessions")
 
 
+class SessionMaterial(Base):
+    """A file/resource a trainer attaches to a session; enrolled users can view it."""
+
+    __tablename__ = "session_materials"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    session_id: Mapped[int] = mapped_column(
+        ForeignKey("training_sessions.id"), index=True
+    )
+    title: Mapped[str] = mapped_column(String(200))
+    filename: Mapped[str] = mapped_column(String(255))
+    content_type: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    stored_path: Mapped[str] = mapped_column(String(500))
+    uploaded_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
 class AttendanceToken(Base):
     """A QR attendance token issued for a session (the token value is a signed JWT).
 

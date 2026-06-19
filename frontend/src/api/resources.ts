@@ -115,6 +115,36 @@ export const coursesApi = {
     api.post("/courses", body).then((r) => r.data),
 };
 
+// --- Session materials (files) ---
+export interface Material {
+  id: number;
+  session_id: number;
+  title: string;
+  filename: string;
+  content_type: string | null;
+  uploaded_by: number;
+  created_at: string;
+}
+export const materialsApi = {
+  list: (sessionId: number) =>
+    api.get<Material[]>(`/sessions/${sessionId}/materials`).then((r) => r.data),
+  upload: (sessionId: number, file: File, title: string) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("title", title);
+    return api.post<Material>(`/sessions/${sessionId}/materials`, fd).then((r) => r.data);
+  },
+  download: async (materialId: number, filename: string) => {
+    const resp = await api.get(`/materials/${materialId}/download`, { responseType: "blob" });
+    const url = URL.createObjectURL(resp.data);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+};
+
 // --- Attendance ---
 export interface AttendanceEntry {
   user_id: number;

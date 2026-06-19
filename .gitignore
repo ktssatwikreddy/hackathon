@@ -15,3 +15,6 @@ runtime/*.db
 *.db
 backend/tapms.db
 .venv/
+
+# Session material uploads
+backend/uploads/

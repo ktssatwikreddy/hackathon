@@ -69,7 +69,7 @@ export default function Trainings() {
     <Box>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h4">Trainings</Typography>
-        <RoleGuard roles={["super_admin", "trainer"]}>
+        <RoleGuard roles={["super_admin"]}>
           <Button variant="contained" startIcon={<Add />} onClick={() => { reset({ title: "", description: "", category: "", department_id: "", status: "draft" }); setOpen(true); }}>
             New Training
           </Button>

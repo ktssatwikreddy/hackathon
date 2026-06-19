@@ -1,4 +1,4 @@
-import { Add, AutoAwesome, Delete, QrCode2 } from "@mui/icons-material";
+import { Add, AttachFile, AutoAwesome, Delete, QrCode2 } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -25,8 +25,9 @@ import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 
 import RoleGuard from "../components/RoleGuard";
+import SessionMaterialsDialog from "../components/SessionMaterialsDialog";
 import SessionQrDialog from "../components/SessionQrDialog";
-import { type QrToken, aiApi, qrApi, sessionsApi } from "../api/resources";
+import { type QrToken, aiApi, assessmentsApi, qrApi, sessionsApi } from "../api/resources";
 import {
   useAssessments,
   useEnrollments,
@@ -181,6 +182,7 @@ function SessionsTab({ trainingId }: { trainingId: number }) {
   // QR state
   const [qrToken, setQrToken] = useState<QrToken | null>(null);
   const [qrSession, setQrSession] = useState<{ id: number; title: string } | null>(null);
+  const [filesSession, setFilesSession] = useState<{ id: number; title: string } | null>(null);
 
   const onSubmit = (form: SForm) => {
     create.mutate({
@@ -230,16 +232,19 @@ function SessionsTab({ trainingId }: { trainingId: number }) {
           <ListItem
             key={s.id}
             secondaryAction={
-              <RoleGuard roles={["super_admin", "trainer"]}>
-                <Stack direction="row" spacing={1}>
+              <Stack direction="row" spacing={1}>
+                <Button size="small" startIcon={<AttachFile />} onClick={() => setFilesSession({ id: s.id, title: s.title })}>
+                  Files
+                </Button>
+                <RoleGuard roles={["super_admin", "trainer"]}>
                   {s.status !== "ended" && (
                     <Button size="small" onClick={() => endSession(s.id)}>End</Button>
                   )}
                   <Button size="small" variant="contained" startIcon={<QrCode2 />} onClick={() => generateQr({ id: s.id, title: s.title })}>
                     Generate QR
                   </Button>
-                </Stack>
-              </RoleGuard>
+                </RoleGuard>
+              </Stack>
             }
           >
             <ListItemText
@@ -261,6 +266,12 @@ function SessionsTab({ trainingId }: { trainingId: number }) {
         onRegenerate={regenerate}
         onRevoke={revoke}
         onClose={() => { setQrToken(null); setQrSession(null); }}
+      />
+
+      <SessionMaterialsDialog
+        sessionId={filesSession?.id ?? null}
+        sessionTitle={filesSession?.title ?? ""}
+        onClose={() => setFilesSession(null)}
       />
 
       <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
@@ -293,6 +304,14 @@ function SessionsTab({ trainingId }: { trainingId: number }) {
   );
 }
 
+interface ManualQ {
+  question_text: string;
+  question_type: "mcq" | "short";
+  options: string;
+  correct_answer: string;
+}
+const blankQ: ManualQ = { question_text: "", question_type: "mcq", options: "", correct_answer: "" };
+
 function AssessmentsTab({ trainingId, onGenerated }: { trainingId: number; onGenerated: () => void }) {
   const navigate = useNavigate();
   const { data: assessments } = useAssessments(trainingId);
@@ -300,6 +319,12 @@ function AssessmentsTab({ trainingId, onGenerated }: { trainingId: number; onGen
   const [material, setMaterial] = useState("");
   const [num, setNum] = useState(5);
   const [busy, setBusy] = useState(false);
+
+  // Manual quiz state
+  const [manualOpen, setManualOpen] = useState(false);
+  const [quizTitle, setQuizTitle] = useState("");
+  const [passing, setPassing] = useState(1);
+  const [questions, setQuestions] = useState<ManualQ[]>([{ ...blankQ }]);
 
   const generate = async () => {
     setBusy(true);
@@ -313,12 +338,43 @@ function AssessmentsTab({ trainingId, onGenerated }: { trainingId: number; onGen
     }
   };
 
+  const createManual = async () => {
+    setBusy(true);
+    try {
+      await assessmentsApi.create({
+        training_id: trainingId,
+        title: quizTitle,
+        passing_marks: passing,
+        questions: questions.map((q, i) => ({
+          question_text: q.question_text,
+          question_type: q.question_type,
+          options: q.question_type === "mcq" ? q.options.split(",").map((o) => o.trim()).filter(Boolean) : null,
+          correct_answer: q.correct_answer,
+          marks: 1,
+          order_index: i,
+        })),
+      });
+      onGenerated();
+      setManualOpen(false);
+      setQuizTitle("");
+      setPassing(1);
+      setQuestions([{ ...blankQ }]);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <RoleGuard roles={["super_admin", "trainer"]}>
-        <Button startIcon={<AutoAwesome />} variant="contained" sx={{ mb: 2 }} onClick={() => setOpen(true)}>
-          Generate AI assessment
-        </Button>
+        <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+          <Button startIcon={<AutoAwesome />} variant="contained" onClick={() => setOpen(true)}>
+            Generate AI assessment
+          </Button>
+          <Button startIcon={<Add />} variant="outlined" onClick={() => setManualOpen(true)}>
+            New quiz (manual)
+          </Button>
+        </Stack>
       </RoleGuard>
       <List dense>
         {assessments?.length === 0 && <Typography color="text.secondary">No assessments yet.</Typography>}
@@ -333,14 +389,58 @@ function AssessmentsTab({ trainingId, onGenerated }: { trainingId: number; onGen
         <DialogTitle>Generate AI assessment</DialogTitle>
         <DialogContent>
           <Stack spacing={2} mt={1}>
-            <TextField label="Material text" fullWidth multiline rows={5} value={material} onChange={(e) => setMaterial(e.target.value)} />
+            <Typography variant="body2" color="text.secondary">
+              Enter a topic (e.g. "Fundamentals of Python") or paste material. Leave blank to
+              generate from the course title. The AI uses its own knowledge — it isn't limited to what you type.
+            </Typography>
+            <TextField label="Topic or material (optional)" fullWidth multiline rows={4} value={material} onChange={(e) => setMaterial(e.target.value)} />
             <TextField label="Number of questions" type="number" value={num} onChange={(e) => setNum(Number(e.target.value))} />
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button variant="contained" disabled={busy || !material} onClick={generate}>
+          <Button variant="contained" disabled={busy} onClick={generate}>
             {busy ? "Generating…" : "Generate"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={manualOpen} onClose={() => setManualOpen(false)} fullWidth maxWidth="md">
+        <DialogTitle>New quiz</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} mt={1}>
+            <Stack direction="row" spacing={2}>
+              <TextField label="Quiz title" fullWidth value={quizTitle} onChange={(e) => setQuizTitle(e.target.value)} />
+              <TextField label="Passing marks" type="number" sx={{ width: 160 }} value={passing} onChange={(e) => setPassing(Number(e.target.value))} />
+            </Stack>
+            {questions.map((q, i) => (
+              <Paper key={i} variant="outlined" sx={{ p: 2 }}>
+                <Stack spacing={1.5}>
+                  <Stack direction="row" spacing={2}>
+                    <TextField label={`Question ${i + 1}`} fullWidth value={q.question_text}
+                      onChange={(e) => setQuestions((qs) => qs.map((x, j) => j === i ? { ...x, question_text: e.target.value } : x))} />
+                    <TextField select label="Type" sx={{ width: 140 }} value={q.question_type}
+                      onChange={(e) => setQuestions((qs) => qs.map((x, j) => j === i ? { ...x, question_type: e.target.value as "mcq" | "short" } : x))}>
+                      <MenuItem value="mcq">MCQ</MenuItem>
+                      <MenuItem value="short">Short</MenuItem>
+                    </TextField>
+                  </Stack>
+                  {q.question_type === "mcq" && (
+                    <TextField label="Options (comma-separated)" fullWidth value={q.options}
+                      onChange={(e) => setQuestions((qs) => qs.map((x, j) => j === i ? { ...x, options: e.target.value } : x))} />
+                  )}
+                  <TextField label="Correct answer" fullWidth value={q.correct_answer}
+                    onChange={(e) => setQuestions((qs) => qs.map((x, j) => j === i ? { ...x, correct_answer: e.target.value } : x))} />
+                </Stack>
+              </Paper>
+            ))}
+            <Button startIcon={<Add />} onClick={() => setQuestions((qs) => [...qs, { ...blankQ }])}>Add question</Button>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setManualOpen(false)}>Cancel</Button>
+          <Button variant="contained" disabled={busy || !quizTitle || questions.some((q) => !q.question_text || !q.correct_answer)} onClick={createManual}>
+            {busy ? "Saving…" : "Create quiz"}
           </Button>
         </DialogActions>
       </Dialog>

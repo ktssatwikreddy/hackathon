@@ -16,6 +16,7 @@ from app.routers import (
     courses,
     departments,
     integrations,
+    materials,
     notifications,
     qr,
     reports,
@@ -49,6 +50,7 @@ app.include_router(courses.router)
 app.include_router(trainings.router)
 app.include_router(sessions.router)
 app.include_router(qr.router)
+app.include_router(materials.router)
 app.include_router(attendance.router)
 app.include_router(assessments.router)
 app.include_router(ai.router)
